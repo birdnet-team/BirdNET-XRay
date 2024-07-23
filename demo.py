@@ -1,3 +1,4 @@
+import os
 import cv2
 from screeninfo import get_monitors
 import numpy as np
@@ -11,7 +12,10 @@ import time
 MODEL_PATH = 'model/BirdNET_GLOBAL_6K_V2.4_Model_FP16.tflite'
 LABEL_FILE = 'model/BirdNET_GLOBAL_6K_V2.4_Labels_de.txt'
 
-AUDIO_FILE = 'soundscapes/XC602227 - Soundscape_32kHz.mp3'
+#AUDIO_FILE = 'soundscapes/XC602227 - Soundscape_32kHz.mp3'
+AUDIO_INDEX = 0
+AUDIO_FOLDER = 'soundscapes'
+AUDIO_DATA = []
 AUDIO_SAMPLES = np.array([], dtype='float32')
 BUFFER_SIZE = 1024
 IMAGE_CHANNELS = 1
@@ -41,36 +45,57 @@ OUTPUT_IDX = {'spec1': 220, 'spec2': 261, 'conv0': 266, 'block1': 294, 'block2':
 GRID_WIDTH = {'spec1': 1, 'spec2': 1, 'conv0': 2, 'block1': 2, 'block2': 2, 'block3': 2, 'block4': 3, 'post_conv': 6, 'pooling': 11, 'class': 30}
 SCREEN_WIDTH = {'spec1': 0.2, 'spec2': 0.2, 'conv0': 0.2, 'block1': 0.125, 'block2': 0.1, 'block3': 0.1, 'block4': 0.1, 'post_conv': 0.1, 'pooling': 0.1, 'class': 0.2}
 
-# Load labels file
-LABELS = []
-with open(LABEL_FILE, 'r') as f:
-    for line in f:
-        label = line.strip().split('_')[1]
-        label = label.replace('Ã¤', 'ä').replace('Ã¶', 'ö').replace('Ã¼', 'ü').replace('ÃŸ', 'ß')
-        label = label.replace('ä', 'ae').replace('ö', 'oe').replace('ü', 'ue').replace('ß', 'ss')
-        LABELS.append(label)
+def load():
 
-# Load model
-interpreter = tflite.Interpreter(model_path=MODEL_PATH, experimental_preserve_all_tensors=True, num_threads=4)
+    global interpreter, input_details, output_details, LABELS, width, height
 
-# Allocate tensors
-interpreter.allocate_tensors()
+    # load audio files
+    loadSoundfiles()
 
-# Get input and output tensors
-input_details = interpreter.get_input_details()
-output_details = interpreter.get_output_details()
+    # Load labels file
+    LABELS = []
+    with open(LABEL_FILE, 'r') as f:
+        for line in f:
+            label = line.strip().split('_')[1]
+            label = label.replace('Ã¤', 'ä').replace('Ã¶', 'ö').replace('Ã¼', 'ü').replace('ÃŸ', 'ß')
+            label = label.replace('ä', 'ae').replace('ö', 'oe').replace('ü', 'ue').replace('ß', 'ss')
+            LABELS.append(label)
 
-# Create window
-cv2.namedWindow('demo', cv2.WINDOW_NORMAL)
+    # Load model
+    interpreter = tflite.Interpreter(model_path=MODEL_PATH, experimental_preserve_all_tensors=True, num_threads=4)
 
-# Get screen resolution
-screen = get_monitors()[0]
-width = screen.width
-height = screen.height
+    # Allocate tensors
+    interpreter.allocate_tensors()
 
-# Show image in window full screen
-cv2.setWindowProperty('demo', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
-cv2.setWindowProperty('demo', height, width)
+    # Get input and output tensors
+    input_details = interpreter.get_input_details()
+    output_details = interpreter.get_output_details()
+
+    # Create window
+    cv2.namedWindow('demo', cv2.WINDOW_NORMAL)
+
+    # Get screen resolution
+    screen = get_monitors()[0]
+    width = screen.width
+    height = screen.height
+
+    # Show image in window full screen
+    cv2.setWindowProperty('demo', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+    cv2.setWindowProperty('demo', height, width)
+
+def loadSoundfiles():
+
+    global AUDIO_DATA
+
+    # Parse audio folder and look for mp3 files
+    afiles = [os.path.join(AUDIO_FOLDER, f) for f in os.listdir(AUDIO_FOLDER) if f.endswith('.mp3')]
+
+    # Load raw audio data for all files
+    AUDIO_DATA = []
+    for f in afiles:
+        print("Loading audio file: {} ({}/{})".format(f, afiles.index(f) + 1, len(afiles)), flush=True)
+        sig, rate = librosa.load(f, sr=48000, offset=0, duration=None)
+        AUDIO_DATA.append(sig)
 
 
 def record():
@@ -99,10 +124,7 @@ def record():
 
 def play():
 
-    global AUDIO_SAMPLES
-
-    # Open wav file
-    sig, rate = librosa.load(AUDIO_FILE, sr=48000, offset=0, duration=None)
+    global AUDIO_SAMPLES, AUDIO_INDEX
 
     # Open audio stream
     p = pyaudio.PyAudio()
@@ -113,6 +135,7 @@ def play():
 
     # Play audio
     idx = 0
+    sig = AUDIO_DATA[AUDIO_INDEX]
     chunk = sig[idx:idx + BUFFER_SIZE]
     while STREAM:
         if not PAUSE:
@@ -123,6 +146,8 @@ def play():
                 idx += BUFFER_SIZE
                 chunk = sig[idx:idx + BUFFER_SIZE]
             else:
+                AUDIO_INDEX += 1
+                sig = AUDIO_DATA[AUDIO_INDEX]
                 idx = 0
                 chunk = sig[idx:idx + BUFFER_SIZE]
 
@@ -500,16 +525,40 @@ def main():
         if key == ord('s'):
             cv2.imwrite('output.png', frame)
 
+        # if key is 'a' switch to next audio file
+        if key == ord('a'):
+
+            global AUDIO_INDEX, STREAM, STREAM_WORKER
+
+            # Stop stream
+            STREAM = False
+
+            # Wait for stream to finish
+            STREAM_WORKER.join()
+
+            # Load next audio file
+            AUDIO_INDEX += 1
+            if AUDIO_INDEX >= len(AUDIO_DATA):
+                AUDIO_INDEX = 0
+
+            # Start stream
+            STREAM = True
+            STREAM_WORKER = Thread(target=play, args=())
+            STREAM_WORKER.start()
+
         # If user press ESC, break loop
         elif key == 27:
             break    
 
 if __name__ == "__main__":
 
+    # Load data, model and window
+    load()
+
     # Start recording
     STREAM = True
-    streamWorker = Thread(target=play, args=())
-    streamWorker.start()
+    STREAM_WORKER = Thread(target=play, args=())
+    STREAM_WORKER.start()
 
     # Start main loop
     try:

@@ -18,3 +18,4 @@ Keyboard shortcuts:
 - `p` to pause/resume
 - `s` to save the current frame
 - `c` to change the colormap
+- `a` to play next soundscapes
