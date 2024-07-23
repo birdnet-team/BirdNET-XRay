@@ -3,7 +3,8 @@ BirdNET sound ID demo
 
 # Setup
 ```
-pip install opencv-python numpy librosa tensorflow screeninfo
+pip install opencv-python numpy tensorflow screeninfo pyaudio librosa resampy
+sudo apt-get install ffmpeg
 ```
 
 # Run
