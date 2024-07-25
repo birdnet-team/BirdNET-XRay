@@ -118,7 +118,6 @@ def loadSoundfiles():
         print("Loading audio file: {} ({}/{})".format(f, afiles.index(f) + 1, len(afiles)), flush=True)
         sig, rate = librosa.load(f, sr=48000, offset=0, duration=None)
         AUDIO_DATA.append(sig)
-        return
 
 
 def record():
