@@ -11,16 +11,15 @@ import librosa
 import time
 
 MODEL_PATH = 'model/BirdNET_GLOBAL_6K_V2.4_Model_FP16.tflite'
-LABEL_FILE = 'model/BirdNET_GLOBAL_6K_V2.4_Labels_de.txt'
+LABEL_FILE = 'model/BirdNET_GLOBAL_6K_V2.4_Labels.txt'
 
-#AUDIO_FILE = 'soundscapes/XC602227 - Soundscape_32kHz.mp3'
 AUDIO_INDEX = 0
 AUDIO_FOLDER = 'soundscapes'
 AUDIO_DATA = []
 AUDIO_SAMPLES = np.array([], dtype='float32')
 BUFFER_SIZE = 1024
 IMAGE_CHANNELS = 1
-COLORMAP = None#cv2.COLORMAP_VIRIDIS
+COLORMAP = None
 SPACING = 0.0225
 BORDER_COLOR = 128
 FONT_SIZE = 0.55
@@ -29,18 +28,6 @@ NUMBER_OF_RESULTS = 15
 MAXIMA = {}
 STREAM = False
 PAUSE = False
-
-# Model outputs BirdNET_GLOBAL_6K_V2.4:
-# Spec1: 220 
-# Spec2: 261
-# Conv0: 266
-# Block 1: 294
-# Block 2: 370
-# Block 3: 465
-# Block 4: 541
-# Post conv: 544
-# Pooling: 545
-# Class: 546
 
 OUTPUT_IDX = {'spec1': 220, 'spec2': 261, 'conv0': 266, 'block1': 294, 'block2': 370, 'block3': 465, 'block4': 522, 'post_conv': 544, 'pooling': 545, 'class': 546}
 GRID_WIDTH = {'spec1': 1, 'spec2': 1, 'conv0': 2, 'block1': 2, 'block2': 2, 'block3': 2, 'block4': 3, 'post_conv': 6, 'pooling': 11, 'class': 30}
