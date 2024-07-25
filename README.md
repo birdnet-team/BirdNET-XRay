@@ -2,7 +2,7 @@
 
 This is an interactive application that demonstrates how the BirdNET bird sound identification model works. This demo provides a visual and auditory experience where users can see and hear how the model processes and identifies bird calls in real time.
 
-![BirdNET-XRay Demo](BirdNET-XRay_Demo.gif)
+<img src="BirdNET-XRay_Demo.gif" alt="BirdNET-XRay Demo" style="width:100%;">
 
 ## Setup
 ```
