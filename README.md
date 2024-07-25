@@ -4,12 +4,12 @@ BirdNET sound ID demo
 # Setup
 ```
 sudo apt-get install ffmpeg portaudio19-dev python3-opencv
-pip install tensorflow screeninfo librosa pyaudio
+pip3 install tensorflow screeninfo librosa pyaudio
 ```
 
 # Run
 ```
-python demo.py
+python3 demo.py
 ```
 
 Keyboard shortcuts: 
