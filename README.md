@@ -2,6 +2,8 @@
 
 This is an interactive application that demonstrates how the BirdNET bird sound identification model works. This demo provides a visual and auditory experience where users can see and hear how the model processes and identifies bird calls in real time.
 
+![BirdNET-XRay Demo](BirdNET-XRay_Demo.gif)
+
 ## Setup
 ```
 sudo apt-get install ffmpeg portaudio19-dev python3-opencv

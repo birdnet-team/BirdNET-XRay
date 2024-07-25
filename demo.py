@@ -28,6 +28,7 @@ NUMBER_OF_RESULTS = 15
 MAXIMA = {}
 STREAM = False
 PAUSE = False
+FRAME_NR = 0
 
 OUTPUT_IDX = {'spec1': 220, 'spec2': 261, 'conv0': 266, 'block1': 294, 'block2': 370, 'block3': 465, 'block4': 522, 'post_conv': 544, 'pooling': 545, 'class': 546}
 GRID_WIDTH = {'spec1': 1, 'spec2': 1, 'conv0': 2, 'block1': 2, 'block2': 2, 'block3': 2, 'block4': 3, 'post_conv': 6, 'pooling': 11, 'class': 30}
@@ -301,7 +302,7 @@ def parseOutput(output_data, grid_width, frame_width, frame_height, name='', bor
 
 def main():
 
-    global IMAGE_CHANNELS, TEXT_COLOR, COLORMAP, PAUSE
+    global IMAGE_CHANNELS, TEXT_COLOR, COLORMAP, PAUSE, FRAME_NR
 
     # Loop until user press ESC
     while True:
@@ -499,8 +500,8 @@ def main():
         # Show image in window
         cv2.imshow('demo', frame)
 
-        # Save frame to file
-        #cv2.imwrite('output.png', frame)        
+        # DEBUG: Save every frame to file
+        #cv2.imwrite('saved_frames/frame_{:04d}.png'.format(FRAME_NR), frame)        
 
         # Wait 1ms for user input
         key = cv2.waitKey(1)
@@ -532,7 +533,7 @@ def main():
 
         # if key is 's', save image
         if key == ord('s'):
-            cv2.imwrite('output.png', frame)
+            cv2.imwrite('saved_frames/frame_{:04d}.png'.format(FRAME_NR), frame)
 
         # if key is 'a' switch to next audio file
         if key == ord('a'):
@@ -558,6 +559,9 @@ def main():
         # If user press ESC, break loop
         elif key == 27:
             break    
+
+        # Increase frame number
+        FRAME_NR += 1
 
 if __name__ == "__main__":
 
