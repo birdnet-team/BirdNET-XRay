@@ -1,4 +1,5 @@
 import os
+import argparse
 import cv2
 from screeninfo import get_monitors
 import numpy as np
@@ -43,11 +44,17 @@ PAUSE = False
 
 OUTPUT_IDX = {'spec1': 220, 'spec2': 261, 'conv0': 266, 'block1': 294, 'block2': 370, 'block3': 465, 'block4': 522, 'post_conv': 544, 'pooling': 545, 'class': 546}
 GRID_WIDTH = {'spec1': 1, 'spec2': 1, 'conv0': 2, 'block1': 2, 'block2': 2, 'block3': 2, 'block4': 3, 'post_conv': 6, 'pooling': 11, 'class': 30}
-SCREEN_WIDTH = {'spec1': 0.2, 'spec2': 0.2, 'conv0': 0.2, 'block1': 0.125, 'block2': 0.1, 'block3': 0.1, 'block4': 0.1, 'post_conv': 0.1, 'pooling': 0.1, 'class': 0.2}
+SCREEN_WIDTH = {'spec1': 0.2, 'spec2': 0.2, 'conv0': 0.2, 'block1': 0.125, 'block2': 0.1, 'block3': 0.1, 'block4': 0.1, 'post_conv': 0.1, 'pooling': 0.1, 'class': 0.2, 'bar_width': 0.05}
 
-def load():
+def load(frame_width, frame_height, width_scaling):
 
-    global interpreter, input_details, output_details, LABELS, width, height
+    global interpreter, input_details, output_details, LABELS, width, height, SCREEN_WIDTH
+
+    # Calculate the sum of the current values
+    total = sum(SCREEN_WIDTH.values())
+
+    # Normalize the values
+    SCREEN_WIDTH = {key: (value / total) * width_scaling for key, value in SCREEN_WIDTH.items()}
 
     # load audio files
     loadSoundfiles()
@@ -76,12 +83,27 @@ def load():
 
     # Get screen resolution
     screen = get_monitors()[0]
-    width = screen.width
-    height = screen.height
+    screen_width = screen.width
+    screen_height = screen.height
 
-    # Show image in window full screen
-    cv2.setWindowProperty('demo', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
-    cv2.setWindowProperty('demo', height, width)
+    if frame_width == -1 and frame_height == -1:
+        width = screen_width
+        height = screen_height
+
+        # Show image in window full screen
+        cv2.setWindowProperty('demo', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+        cv2.setWindowProperty('demo', height, width)
+
+    else:
+        # Ensure the window size does not exceed the screen size
+        width = min(frame_width, screen_width)
+        height = min(frame_height, screen_height)
+
+        # Set window position
+        cv2.moveWindow('demo', 0, 0)
+
+        # Set window size
+        cv2.resizeWindow('demo', width, height)
 
 def loadSoundfiles():
 
@@ -96,6 +118,7 @@ def loadSoundfiles():
         print("Loading audio file: {} ({}/{})".format(f, afiles.index(f) + 1, len(afiles)), flush=True)
         sig, rate = librosa.load(f, sr=48000, offset=0, duration=None)
         AUDIO_DATA.append(sig)
+        return
 
 
 def record():
@@ -463,7 +486,7 @@ def main():
         # Show results
         for i in range(NUMBER_OF_RESULTS):
             bar_v_spacing = int(height * 0.025)
-            bar_width = int(width * 0.05)
+            bar_width = int(width * SCREEN_WIDTH['bar_width'])
             bar_height = int(height * (1 - SPACING * 1) / NUMBER_OF_RESULTS) - bar_v_spacing
             bar_posX = output_class_posX + output_class.shape[1] + int(width * SPACING)
             bar_posY = int(height * SPACING) + i * (bar_height + bar_v_spacing)
@@ -552,8 +575,28 @@ def main():
 
 if __name__ == "__main__":
 
+    parser = argparse.ArgumentParser(description="BirdNET-XRay Demo.")
+    parser.add_argument('--resolution', type=str, default='fullscreen', help='Resolution of the window, e.g., "fullscreen" or "1024x768"')
+    parser.add_argument('--scaling', type=float, default='1.5', help='Scaling factor for the width of the output elements. Default is 1.5, lower values might work better on smaller screens.')
+    parser.add_argument('--fontsize', type=float, default='0.55', help='Font size for text elements. Default is 0.55.')
+
+    args = parser.parse_args()
+
+    # Set font size
+    FONT_SIZE = args.fontsize
+
+    # Set resolution
+    if args.resolution == 'fullscreen':
+        frame_width = -1
+        frame_height = -1
+    else:
+        try:
+            frame_width, frame_height = map(int, args.resolution.split('x'))
+        except ValueError:
+            print("Invalid resolution format. Use 'fullscreen' or 'widthxheight'.")
+
     # Load data, model and window
-    load()
+    load(frame_width, frame_height, args.scaling)
 
     # Start recording
     STREAM = True
